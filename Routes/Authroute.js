@@ -29,10 +29,10 @@ router.post("/reset-password/:token", resetPassword);
 // ================= GOOGLE AUTH =================
 
 // Step 1: Redirect user to Google
-router.get(
-  "/google",
+router.get("/google",
   passport.authenticate("google", {
     scope: ["profile", "email"],
+    callbackURL: process.env.GOOGLE_CALLBACK_URL
   })
 );
 
