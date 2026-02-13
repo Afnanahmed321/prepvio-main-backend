@@ -13,6 +13,7 @@ import passport from "passport";
 import "./config/passport.js";
 import http from "http";
 import { Server } from "socket.io";
+import jwt from "jsonwebtoken"
 
 // Route imports
 import companyRoutes from "./check-your-ability/routes/companyRoutes.js";
