@@ -50,7 +50,8 @@ app.use(cors({
     "http://localhost:5173",
     "http://localhost:5174",
     "https://prepvio-main-frontend.vercel.app",
-    "https://lively-wave-0748c6f00.1.azurestaticapps.net"
+    "https://lively-wave-0748c6f00.1.azurestaticapps.net",
+    "https://www.prepvio.in"
   ],
   credentials: true
 }));
@@ -389,7 +390,8 @@ const io = new Server(server, {
       "http://localhost:5173",
       "http://localhost:5174",
       "https://prepvio-main-frontend.vercel.app",
-      "https://lively-wave-0748c6f00.1.azurestaticapps.net"
+      "https://lively-wave-0748c6f00.1.azurestaticapps.net",
+      "https://www.prepvio.in"
     ],
     credentials: true
   }
