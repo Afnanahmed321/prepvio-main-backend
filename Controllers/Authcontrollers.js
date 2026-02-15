@@ -1,5 +1,5 @@
 import { User } from "../Models/User.js";
-import { Project } from "../Models/Project.js"; // Added this import
+import { Project } from "../Models/Project.js";
 import bcryptjs from "bcryptjs";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
@@ -14,12 +14,23 @@ import {
 import { sendWelcomeNotification, sendFreeInterviewCreditNotification } from "../Utils/notificationHelper.js";
 import { deduplicateCourseProgress } from "../Utils/courseHelper.js";
 
+// ✅ UPDATED CHECKAUTH - Return clear authenticated status
 export const checkAuth = async (req, res) => {
   try {
+    // ✅ Check if user is authenticated
+    if (!req.userId) {
+      return res.status(401).json({
+        success: false,
+        authenticated: false,
+        message: "Not authenticated"
+      });
+    }
+
     // ✅ Handle Hardcoded Admin Session
     if (req.userId === "admin") {
       return res.status(200).json({
         success: true,
+        authenticated: true,
         user: {
           _id: "admin",
           email: process.env.ADMIN_EMAIL,
@@ -33,18 +44,27 @@ export const checkAuth = async (req, res) => {
     const user = await User.findById(req.userId).select("-password");
 
     if (!user) {
-      return res
-        .status(400)
-        .json({ success: false, message: "User not found" });
+      return res.status(401).json({ 
+        success: false,
+        authenticated: false,
+        message: "User not found" 
+      });
     }
 
-    res.status(200).json({ success: true, user });
+    res.status(200).json({ 
+      success: true,
+      authenticated: true,
+      user 
+    });
   } catch (error) {
     console.log("Error in checkAuth", error);
-    res.status(400).json({ success: false, message: error.message });
+    res.status(401).json({ 
+      success: false,
+      authenticated: false,
+      message: error.message 
+    });
   }
 };
-
 
 /* ================= SIGNUP ================= */
 export const signup = async (req, res) => {
@@ -67,14 +87,13 @@ export const signup = async (req, res) => {
       email,
       password: hashedPassword,
       name,
-      role, // ✅ Allow setting role (user/admin)
+      role,
       verificationToken,
       verificationTokenExpiresAt: Date.now() + 24 * 60 * 60 * 1000,
     });
 
     await newUser.save();
 
-    // ✅ DO NOT LOGIN USER HERE
     await sendVerificationEmail(newUser.email, verificationToken);
 
     res.status(201).json({
@@ -107,15 +126,12 @@ export const verifyEmail = async (req, res) => {
     user.verificationTokenExpiresAt = undefined;
     await user.save();
 
-    // ✅ LOGIN USER ONLY AFTER VERIFICATION
     const token = generateTokenAndSetCookie(res, user._id, "user_token");
 
     await sendWelcomeEmail(user.email, user.name);
 
-    // ✅ SEND WELCOME NOTIFICATION
     await sendWelcomeNotification(user._id, user.name);
 
-    // ✅ SEND FREE INTERVIEW CREDIT NOTIFICATION (with delay)
     setTimeout(async () => {
       await sendFreeInterviewCreditNotification(user._id, user.name);
     }, 2000);
@@ -123,7 +139,7 @@ export const verifyEmail = async (req, res) => {
     res.status(200).json({
       success: true,
       message: "Email verified successfully",
-      token: token,  // ✅ Return token to frontend for socket connection
+      token: token,
       user: {
         ...user._doc,
         password: undefined,
@@ -148,11 +164,9 @@ export const login = async (req, res) => {
       });
     }
 
-    // 1. Try to find user in DB (by Email OR UserID)
     console.log("--------------- LOGIN DEBUG ---------------");
     console.log("Input Email/ID:", email);
 
-    // Assuming User model has a userId field, if not, you might need to check if email is also userId or adjust query
     const user = await User.findOne({
       $or: [{ email: email.toLowerCase() }, { userId: email }]
     }).select("+password");
@@ -206,7 +220,6 @@ export const login = async (req, res) => {
     }
 
     // 3. FALLBACK: Check Hardcoded Admin (if DB login failed or user not found)
-    // ❌ BLOCK HARDCODED ADMIN FROM USER PORTAL
     if (email === process.env.ADMIN_EMAIL && password === process.env.ADMIN_PASSWORD) {
       return res.status(403).json({
         success: false,
@@ -273,42 +286,71 @@ export const resetPassword = async (req, res) => {
   }
 };
 
-/* ================= LOGOUT ================= */
+/* ================= LOGOUT - THE KEY FIX ================= */
 export const logout = async (req, res) => {
-  res.clearCookie("token");
-  res.clearCookie("user_token");
-  res.clearCookie("admin_token");
-  res.clearCookie("user_auth_token");
-  res.clearCookie("admin_auth_token");
-  res.status(200).json({ success: true, message: "Logged out successfully" });
+  try {
+    console.log("🔄 Processing logout request...");
+
+    // ✅ List ALL cookies to clear
+    const cookiesToClear = [
+      "token",
+      "user_token",
+      "admin_token",
+      "user_auth_token",
+      "admin_auth_token",
+      "rzp_unified_session_id", // ✅ Razorpay cookie
+      "rzp.session",
+      "rzp.context",
+    ];
+
+    // ✅ Clear each cookie properly with different options
+    cookiesToClear.forEach(cookieName => {
+      // Clear with basic path
+      res.clearCookie(cookieName, { path: "/" });
+      
+      // Also clear with httpOnly + secure flags (in case they were set that way)
+      res.clearCookie(cookieName, { 
+        path: "/",
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict"
+      });
+    });
+
+    console.log("✅ All cookies cleared successfully");
+
+    res.status(200).json({ 
+      success: true, 
+      message: "Logged out successfully" 
+    });
+  } catch (error) {
+    console.error("❌ Logout error:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: error.message 
+    });
+  }
 };
 
 export const googleAuthCallback = async (req, res) => {
   try {
     const user = req.user; // injected by passport
 
-    // Issue SAME JWT as normal users
-    const token = generateTokenAndSetCookie(res, user._id, "user_token");
-
     if (!user) {
       console.error("Google auth error: No user found in request");
       return res.redirect(`${process.env.CLIENT_URL}/login?error=oauth_failed`);
     }
 
-    // ✅ Issue JWT and set cookie (cookie is the primary auth mechanism)
-    generateTokenAndSetCookie(res, user._id, "user_token");
+    const token = generateTokenAndSetCookie(res, user._id, "user_token");
 
-    // Check if this is a new user (from passport) or first login
     const isFirstLogin = user.isNewUser || !user.lastLogin;
 
     user.lastLogin = new Date();
     await user.save();
 
-    // ✅ SEND WELCOME NOTIFICATION FOR NEW GOOGLE USERS
     if (isFirstLogin) {
       await sendWelcomeNotification(user._id, user.name);
 
-      // ✅ SEND FREE INTERVIEW CREDIT NOTIFICATION (with delay)
       setTimeout(async () => {
         await sendFreeInterviewCreditNotification(user._id, user.name);
       }, 2000);
@@ -323,7 +365,6 @@ export const googleAuthCallback = async (req, res) => {
 
 /* ================= NEW PORTFOLIO LOGIC ================= */
 
-// GET ALL PORTFOLIO DATA
 export const getPortfolioData = async (req, res) => {
   try {
     const user = await User.findById(req.userId).select("-password");
@@ -349,7 +390,6 @@ export const getPortfolioData = async (req, res) => {
   }
 };
 
-// ADD NEW PROJECT
 export const addProject = async (req, res) => {
   try {
     const { title, description, tags, imageUrl, liveLink, githubLink } = req.body;
@@ -368,6 +408,3 @@ export const addProject = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
-
-
-
