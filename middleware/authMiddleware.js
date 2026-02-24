@@ -3,17 +3,10 @@ import { User } from "../Models/User.js";
 
 export const verifyToken = async (req, res, next) => {
   try {
-    let token = null;
-
-    // 1️⃣ CHECK AUTHORIZATION HEADER (Highest priority for cross-port isolation)
-    if (req.headers.authorization?.startsWith("Bearer")) {
-      token = req.headers.authorization.split(" ")[1];
-    }
-
-    // 2️⃣ CHECK COOKIES (Fallback)
-    if (!token) {
-      token = req.cookies?.token || req.cookies?.user_token || req.cookies?.admin_token || req.cookies?.user_auth_token;
-    }
+    // 🔥 ONLY READ FROM COOKIES
+    const token =
+      req.cookies?.user_token ||
+      req.cookies?.admin_token;
 
     if (!token) {
       return res.status(401).json({
@@ -24,7 +17,7 @@ export const verifyToken = async (req, res, next) => {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    const userId = decoded.id || decoded.userId;
+    const userId = decoded.id;
 
     if (!userId) {
       return res.status(401).json({
@@ -33,8 +26,8 @@ export const verifyToken = async (req, res, next) => {
       });
     }
 
-    // 3️⃣ HANDLE HARDCODED ADMIN
-    if (userId === "admin" || userId === "admin-fallback") {
+    // 🔥 HANDLE HARDCODED ADMIN
+    if (userId === "admin") {
       req.user = {
         _id: "admin",
         id: "admin",
@@ -47,8 +40,7 @@ export const verifyToken = async (req, res, next) => {
       return next();
     }
 
-    // 4️⃣ FETCH USER FROM DB
-    const user = await User.findById(decoded.id).select("-password");
+    const user = await User.findById(userId).select("-password");
 
     if (!user) {
       return res.status(401).json({
@@ -58,7 +50,8 @@ export const verifyToken = async (req, res, next) => {
     }
 
     req.user = user;
-    req.userId = user._id; // Set for consistency across different middlewares
+    req.userId = user._id;
+
     next();
   } catch (error) {
     console.error("verifyToken error:", error.message);
