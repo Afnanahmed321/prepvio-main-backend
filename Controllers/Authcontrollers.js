@@ -1097,12 +1097,26 @@ export const resetPassword = async (req, res) => {
 
 /* ================= LOGOUT ================= */
 export const logout = async (req, res) => {
-  res.clearCookie("token");
-  res.clearCookie("user_token");
-  res.clearCookie("admin_token");
-  res.clearCookie("user_auth_token");
-  res.clearCookie("admin_auth_token");
-  res.status(200).json({ success: true, message: "Logged out successfully" });
+  try {
+    const isProduction = process.env.NODE_ENV === "production";
+
+    res.clearCookie("user_token", {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: isProduction ? "none" : "lax",
+      path: "/",
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Logged out successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Logout failed",
+    });
+  }
 };
 
 export const googleAuthCallback = async (req, res) => {
