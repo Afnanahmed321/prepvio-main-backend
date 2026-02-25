@@ -1121,27 +1121,27 @@ export const logout = async (req, res) => {
 
 export const googleAuthCallback = async (req, res) => {
   try {
-    const user = req.user; // injected by passport
+    const user = req.user;
 
-    // Issue SAME JWT as normal users
-    generateTokenAndSetCookie(res, user._id, "user_token");
-    // Check if this is a new user (from passport) or first login
+    // 🔥 CAPTURE TOKEN
+    const token = generateTokenAndSetCookie(res, user._id, "user_token");
+
     const isFirstLogin = user.isNewUser || !user.lastLogin;
 
     user.lastLogin = new Date();
     await user.save();
 
-    // ✅ SEND WELCOME NOTIFICATION FOR NEW GOOGLE USERS
     if (isFirstLogin) {
       await sendWelcomeNotification(user._id, user.name);
 
-      // ✅ SEND FREE INTERVIEW CREDIT NOTIFICATION (with delay)
       setTimeout(async () => {
         await sendFreeInterviewCreditNotification(user._id, user.name);
       }, 2000);
     }
 
-    res.redirect(`${process.env.CLIENT_URL}/`);
+    // 🔥 SEND TOKEN TO FRONTEND
+    res.redirect(`${process.env.CLIENT_URL}/?token=${token}`);
+
   } catch (error) {
     console.error("Google auth error:", error);
     res.redirect(`${process.env.CLIENT_URL}/login?error=oauth_failed`);
