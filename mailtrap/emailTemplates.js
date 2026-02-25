@@ -113,7 +113,7 @@ export const WELCOME_EMAIL_TEMPLATE = `
           You can now explore your dashboard, connect with mentors, and get the best resources for your journey.
         </p>
         <a href="${process.env.CLIENT_URL}" style="display: inline-block; padding: 10px 20px; background-color: #3B82F6; color: white; text-decoration: none; border-radius: 5px;">
-          Go to Dashboard
+          Go to PrepVio
         </a>
         <p style="margin-top: 30px; font-size: 14px; color: #777;">
           If you have any questions, reply to this email — we're here to help!
