@@ -52,4 +52,4 @@ jobs:
           app-name: 'prepvio-mainbackend'
           slot-name: 'Production'
           package: .
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_7A371D5A33E747CF83F22F53FD7715F7 }}
+          publish-profile: ${{ secrets.__publishingprofilesecretname__ }}
