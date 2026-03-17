@@ -52,7 +52,8 @@ app.use(cors({
     "https://prepvio-main-frontend.vercel.app",
     "https://lively-wave-0748c6f00.1.azurestaticapps.net",
     "https://www.prepvio.in",
-    "https://prepvio.in"
+    "https://prepvio.in",
+    "https://calm-forest-0e0994f0f.2.azurestaticapps.net"
   ],
   credentials: true
 }));
@@ -393,7 +394,8 @@ const io = new Server(server, {
       "https://prepvio-main-frontend.vercel.app",
       "https://lively-wave-0748c6f00.1.azurestaticapps.net",
       "https://www.prepvio.in",
-      "https://prepvio.in"
+      "https://prepvio.in",
+      "https://calm-forest-0e0994f0f.2.azurestaticapps.net"
     ],
     credentials: true
   }
