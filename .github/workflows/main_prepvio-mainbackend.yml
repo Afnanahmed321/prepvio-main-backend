@@ -21,7 +21,7 @@ jobs:
       - name: Set up Node.js version
         uses: actions/setup-node@v3
         with:
-          node-version: '20.x'
+          node-version: '24.x'
 
       - name: npm install, build, and test
         run: |
@@ -51,9 +51,9 @@ jobs:
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_51B797A72D474BCEB25E762945025934 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_8C033BB49E3245CFAD73C01AF91CCA02 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_B9D2BC794FC24A29AFAD477957E33A27 }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_45F0CA07E41748038946B7D13605EAB5 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_7D48E8DB643C4E68ADA36BBA1012B0D6 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_0339ADA155824F82935ED6640248CE1D }}
 
       - name: 'Deploy to Azure Web App'
         id: deploy-to-webapp
