@@ -55,7 +55,13 @@ app.use(cors({
     "https://prepvio.in",
     "https://calm-forest-0e0994f0f.2.azurestaticapps.net"
   ],
-  credentials: true
+  credentials: true,
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "x-access-token"
+  ],
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
 }));
 
 // --- 2. Middleware ---
@@ -397,7 +403,12 @@ const io = new Server(server, {
       "https://prepvio.in",
       "https://calm-forest-0e0994f0f.2.azurestaticapps.net"
     ],
-    credentials: true
+    credentials: true,
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization", 
+      "x-access-token"
+    ]
   }
 });
 
